@@ -59,6 +59,18 @@
 </center>
 
 <p>结果 <code>ux = 9</code>，满足之前说的zig-zag编码。针对负数的操作<code>ux = ^ux</code>，实际和解码公式效果是一样的，<code>n &gt;&gt; 31</code>，实际就是全是<code>1</code>，然后进行异或操作，和直接取反是一样的（仅针对负数，因为负数的补码前面都是<code>1</code>）。</p>
+<p>然后将通过zig-zag编码的<code>uint</code>数据传入<code>PutUvarint</code>里面</p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">PutUvarint</span><span class="params">(buf []<span class="type">byte</span>, x <span class="type">uint64</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">	i := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> x &gt;= <span class="number">0x80</span> &#123;</span><br><span class="line">		buf[i] = <span class="type">byte</span>(x) | <span class="number">0x80</span></span><br><span class="line">		x &gt;&gt;= <span class="number">7</span></span><br><span class="line">		i++</span><br><span class="line">	&#125;</span><br><span class="line">	buf[i] = <span class="type">byte</span>(x)</span><br><span class="line">	<span class="keyword">return</span> i + <span class="number">1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这部分代码主要根据数据使用的长度进行了分割，组成新的字节数组，字节数组每个字节包括两部分：</p>
+<ul>
+<li>标志位（1bit）：1：表示后续有其他数据，0:后续无其他数据。</li>
+<li>数据（7bit）：按位从<code>x</code>中读取对应的比特</li>
+</ul>
+<p>最后返回占用的字节数目。接下来举例说明：</p>
+<ul>
+<li><code>x = -5</code>， 则传入<code>PutUvarint(buf []byte, x uint64)</code>的<code>x = 9</code>（按照上述步骤），判断<code>x &lt; 0x80</code>，最终只存放一个字节即可，内容为<code>0 0001001</code></li>
+<li><code>x = 234（1110 1010）</code>，则传入<code>PutUvarint(buf []byte, x uint64)</code>的<code>x = 268（1 1101 0100）</code>（按照上述步骤），判断<code>x &gt; 1000 0000</code>，则需要进行分割操作，最后组成字节数组长度为2，<code>buf[0] = 1 1010100, buf[1] = 0 000 0011</code></li>
+</ul>
 <p>TO BE CONTINUE …</p>
 ]]></content>
       <tags>
