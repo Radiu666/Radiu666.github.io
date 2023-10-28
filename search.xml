@@ -1,12 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>hello</title>
-    <url>/2023/10/26/hello/</url>
-    <content><![CDATA[<p>main</p>
+    <title>CMU15445-lab1</title>
+    <url>/2023/10/27/CMU15445-lab1/</url>
+    <content><![CDATA[<p>Lab 1相关概念的介绍</p>
+<span id="more"></span>
+
+<h1 id="Lab1组成："><a href="#Lab1组成：" class="headerlink" title="Lab1组成："></a>Lab1组成：</h1><ul>
+<li>可扩展哈希表实现page_id-&gt;frame_id映射关系</li>
+<li>LRU-K作为页面驱逐策略</li>
+<li>缓冲池实现页面操作处理</li>
+</ul>
+<h2 id="可扩展哈希表"><a href="#可扩展哈希表" class="headerlink" title="可扩展哈希表"></a>可扩展哈希表</h2><!-- ![avatar](/images/) -->
+<p>可扩展哈希表是一个哈希表（链式解决冲突）的一个变种，在链式解决冲突的方法中，当<code>key</code>多次发生冲突后，会造成所链表长度过大，查询变慢的问题，可扩展哈希表则会限制“链表”的大小。  </p>
+<p>具体来讲，可扩展哈希表分为两个部分，第一部分为哈希目录<code>dir</code>，第二部分为目录所指向的桶<code>bucket</code>。</p>
+<p>TO BE CONTINUE …</p>
 ]]></content>
-      <categories>
-        <category>分类</category>
-      </categories>
+      <tags>
+        <tag>CMU15445</tag>
+        <tag>数据库</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>GO中的Varint</title>
+    <url>/2023/10/28/GO%E4%B8%AD%E7%9A%84Varint/</url>
+    <content><![CDATA[<p>Go中的Varint的实现相关操作</p>
+<span id="more"></span>
+<h1 id="二进制存储"><a href="#二进制存储" class="headerlink" title="二进制存储"></a>二进制存储</h1><ul>
+<li>在Go中，整数都是以补码的形式存储的。<ul>
+<li>正数和零：补码与原码一致。</li>
+<li>负数：补码是通过原码按位取反，然后<code>+1</code>得到。</li>
+<li>int -&gt; uint，实际是同样的补码，只不过针对负数就是去除了符号位。</li>
+</ul>
+</li>
+</ul>
+<h1 id="Go中的Varint"><a href="#Go中的Varint" class="headerlink" title="Go中的Varint"></a>Go中的Varint</h1><h2 id="zig-zag编码"><a href="#zig-zag编码" class="headerlink" title="zig-zag编码"></a>zig-zag编码</h2><p>把有符号整数映射为无符号整数，例如：</p>
+<ul>
+<li>0  -&gt; 0</li>
+<li>-1 -&gt; 1 (001)</li>
+<li>1  -&gt; 2 (010)</li>
+<li>-2 -&gt; 3 (011)</li>
+<li>2  -&gt; 4 (100)</li>
+</ul>
+<p>具体的实现是通过：<code>(n &lt;&lt; 1) ^ (n &gt;&gt; 31)</code>(32位情况)，实际是值的变化是：</p>
+<ul>
+<li>正数：<code>2 * n</code></li>
+<li>负数：<code>-2 * n - 1</code></li>
+</ul>
+<h2 id="zig-zag编码-1"><a href="#zig-zag编码-1" class="headerlink" title="zig-zag编码"></a>zig-zag编码</h2><p>解码过程则是通过<code>(n &gt;&gt; 1) ^ -(n &amp; 1)</code>实现。</p>
+<h2 id="PutVarint"><a href="#PutVarint" class="headerlink" title="PutVarint"></a>PutVarint</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">PutVarint</span><span class="params">(buf []<span class="type">byte</span>, x <span class="type">int64</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">	ux := <span class="type">uint64</span>(x) &lt;&lt; <span class="number">1</span> <span class="comment">// 上述提到的(n &lt;&lt; 1)操作</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 如果 x &gt;= 0, n &gt;&gt; 31为0，0 ^ 0 = 0无需处理</span></span><br><span class="line">    <span class="comment">// 如果x &lt; 0, 则需要进行操作，这里的操作实际结果和上述公式是一致的</span></span><br><span class="line">	<span class="keyword">if</span> x &lt; <span class="number">0</span> &#123;</span><br><span class="line">		ux = ^ux</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> PutUvarint(buf, ux)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>针对负数的情况，我们可以举个例子，<code>x = -5</code>，<code>5</code>的二进制为<code>101</code>，<code>-5</code>的补码为<code>011</code>，32位下为： </p>
+<center>
+
+<p><code>x  = 11111111 11111111 11111111 11111011</code></p>
+<p><code>ux = 1111111 11111111 11111111 111110110</code></p>
+<p><code>ux = ^ux</code></p>
+<p><code>ux = 00000000 00000000 00000000 000001001</code></p>
+</center>
+
+<p>结果 <code>ux = 9</code>，满足之前说的zig-zag编码。针对负数的操作<code>ux = ^ux</code>，实际和解码公式效果是一样的，<code>n &gt;&gt; 31</code>，实际就是全是<code>1</code>，然后进行异或操作，和直接取反是一样的（仅针对负数，因为负数的补码前面都是<code>1</code>）。</p>
+<p>TO BE CONTINUE …</p>
+]]></content>
+      <tags>
+        <tag>Go</tag>
+        <tag>编码</tag>
+      </tags>
   </entry>
 </search>
