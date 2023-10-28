@@ -1,29 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>CMU15445-lab1</title>
-    <url>/2023/10/27/CMU15445-lab1/</url>
-    <content><![CDATA[<p>Lab 1相关概念的介绍</p>
-<span id="more"></span>
-
-<h1 id="Lab1组成："><a href="#Lab1组成：" class="headerlink" title="Lab1组成："></a>Lab1组成：</h1><ul>
-<li>可扩展哈希表实现page_id-&gt;frame_id映射关系</li>
-<li>LRU-K作为页面驱逐策略</li>
-<li>缓冲池实现页面操作处理</li>
-</ul>
-<h2 id="可扩展哈希表"><a href="#可扩展哈希表" class="headerlink" title="可扩展哈希表"></a>可扩展哈希表</h2><!-- ![avatar](/images/) -->
-<p>可扩展哈希表是一个哈希表（链式解决冲突）的一个变种，在链式解决冲突的方法中，当<code>key</code>多次发生冲突后，会造成所链表长度过大，查询变慢的问题，可扩展哈希表则会限制“链表”的大小。  </p>
-<p>具体来讲，可扩展哈希表分为两个部分，第一部分为哈希目录<code>dir</code>，第二部分为目录所指向的桶<code>bucket</code>。</p>
-<p>TO BE CONTINUE …</p>
-]]></content>
-      <tags>
-        <tag>CMU15445</tag>
-        <tag>数据库</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>GO中的Varint</title>
-    <url>/2023/10/28/GO%E4%B8%AD%E7%9A%84Varint/</url>
+    <title>Go中的Varint</title>
+    <url>/2023/10/28/Go%E4%B8%AD%E7%9A%84Varint/</url>
     <content><![CDATA[<p>Go中的Varint的实现相关操作</p>
 <span id="more"></span>
 <h1 id="二进制存储"><a href="#二进制存储" class="headerlink" title="二进制存储"></a>二进制存储</h1><ul>
@@ -47,8 +26,8 @@
 <li>正数：<code>2 * n</code></li>
 <li>负数：<code>-2 * n - 1</code></li>
 </ul>
-<h2 id="zig-zag编码-1"><a href="#zig-zag编码-1" class="headerlink" title="zig-zag编码"></a>zig-zag编码</h2><p>解码过程则是通过<code>(n &gt;&gt; 1) ^ -(n &amp; 1)</code>实现。</p>
-<h2 id="PutVarint"><a href="#PutVarint" class="headerlink" title="PutVarint"></a>PutVarint</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">PutVarint</span><span class="params">(buf []<span class="type">byte</span>, x <span class="type">int64</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">	ux := <span class="type">uint64</span>(x) &lt;&lt; <span class="number">1</span> <span class="comment">// 上述提到的(n &lt;&lt; 1)操作</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 如果 x &gt;= 0, n &gt;&gt; 31为0，0 ^ 0 = 0无需处理</span></span><br><span class="line">    <span class="comment">// 如果x &lt; 0, 则需要进行操作，这里的操作实际结果和上述公式是一致的</span></span><br><span class="line">	<span class="keyword">if</span> x &lt; <span class="number">0</span> &#123;</span><br><span class="line">		ux = ^ux</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> PutUvarint(buf, ux)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="zig-zag解码"><a href="#zig-zag解码" class="headerlink" title="zig-zag解码"></a>zig-zag解码</h2><p>解码过程则是通过<code>(n &gt;&gt; 1) ^ -(n &amp; 1)</code>实现。</p>
+<h2 id="PutVarint（buf-byte-x-int64）编码"><a href="#PutVarint（buf-byte-x-int64）编码" class="headerlink" title="PutVarint（buf []byte, x int64）编码"></a>PutVarint（buf []byte, x int64）编码</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">PutVarint</span><span class="params">(buf []<span class="type">byte</span>, x <span class="type">int64</span>)</span></span> <span class="type">int</span> &#123;</span><br><span class="line">	ux := <span class="type">uint64</span>(x) &lt;&lt; <span class="number">1</span> <span class="comment">// 上述提到的(n &lt;&lt; 1)操作</span></span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 如果 x &gt;= 0, n &gt;&gt; 31为0，0 ^ 0 = 0无需处理</span></span><br><span class="line">    <span class="comment">// 如果x &lt; 0, 则需要进行操作，这里的操作实际结果和上述公式是一致的</span></span><br><span class="line">	<span class="keyword">if</span> x &lt; <span class="number">0</span> &#123;</span><br><span class="line">		ux = ^ux</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> PutUvarint(buf, ux)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>针对负数的情况，我们可以举个例子，<code>x = -5</code>，<code>5</code>的二进制为<code>101</code>，<code>-5</code>的补码为<code>011</code>，32位下为： </p>
 <center>
 
@@ -71,11 +50,35 @@
 <li><code>x = -5</code>， 则传入<code>PutUvarint(buf []byte, x uint64)</code>的<code>x = 9</code>（按照上述步骤），判断<code>x &lt; 0x80</code>，最终只存放一个字节即可，内容为<code>0 0001001</code></li>
 <li><code>x = 234（1110 1010）</code>，则传入<code>PutUvarint(buf []byte, x uint64)</code>的<code>x = 268（1 1101 0100）</code>（按照上述步骤），判断<code>x &gt; 1000 0000</code>，则需要进行分割操作，最后组成字节数组长度为2，<code>buf[0] = 1 1010100, buf[1] = 0 000 0011</code></li>
 </ul>
-<p>TO BE CONTINUE …</p>
+<h2 id="Varint-buf-byte-解码"><a href="#Varint-buf-byte-解码" class="headerlink" title="Varint(buf []byte) 解码"></a>Varint(buf []byte) 解码</h2><figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 从r中读取uint64，最终转换成int64</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ReadUvarint</span><span class="params">(r io.ByteReader)</span></span> (<span class="type">uint64</span>, <span class="type">error</span>) &#123;</span><br><span class="line">	<span class="keyword">var</span> x <span class="type">uint64</span></span><br><span class="line">	<span class="keyword">var</span> s <span class="type">uint</span></span><br><span class="line">    <span class="comment">// 到最大长度，实际是遍历字节数组</span></span><br><span class="line">	<span class="keyword">for</span> i := <span class="number">0</span>; i &lt; MaxVarintLen64; i++ &#123;</span><br><span class="line">		b, err := r.ReadByte()</span><br><span class="line">		<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">			<span class="keyword">return</span> x, err</span><br><span class="line">		&#125;</span><br><span class="line">        <span class="comment">// 就是标志位为0，最后一个有效字节</span></span><br><span class="line">		<span class="keyword">if</span> b &lt; <span class="number">0x80</span> &#123;</span><br><span class="line">			<span class="keyword">if</span> i == MaxVarintLen64<span class="number">-1</span> &amp;&amp; b &gt; <span class="number">1</span> &#123;</span><br><span class="line">				<span class="keyword">return</span> x, overflow</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">return</span> x | <span class="type">uint64</span>(b)&lt;&lt;s, <span class="literal">nil</span></span><br><span class="line">		&#125;</span><br><span class="line">        <span class="comment">// 取每个字节的数据部分</span></span><br><span class="line">		x |= <span class="type">uint64</span>(b&amp;<span class="number">0x7f</span>) &lt;&lt; s</span><br><span class="line">		s += <span class="number">7</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> x, overflow</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>整体是一个反序列化的过程，把字节数组中每个字节后7个bit读出来然后拼接到一起，返回一个<code>uint64</code></p>
+<figure class="highlight go"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Varint</span><span class="params">(buf []<span class="type">byte</span>)</span></span> (<span class="type">int64</span>, <span class="type">int</span>) &#123;</span><br><span class="line">	ux, n := Uvarint(buf) </span><br><span class="line">	x := <span class="type">int64</span>(ux &gt;&gt; <span class="number">1</span>)</span><br><span class="line">    <span class="comment">// 判断zig-zag编码后的无符号数的最后一位，也就是符号位</span></span><br><span class="line">	<span class="keyword">if</span> ux&amp;<span class="number">1</span> != <span class="number">0</span> &#123;</span><br><span class="line">		x = ^x</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> x, n</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>最终要返回的是<code>int64</code>，所以要完成zig-zag的反序列化，最终得到有符号数。</p>
 ]]></content>
       <tags>
         <tag>Go</tag>
         <tag>编码</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>CMU15445-lab1</title>
+    <url>/2023/10/27/CMU15445-lab1/</url>
+    <content><![CDATA[<p>Lab 1相关概念的介绍</p>
+<span id="more"></span>
+
+<h1 id="Lab1组成："><a href="#Lab1组成：" class="headerlink" title="Lab1组成："></a>Lab1组成：</h1><ul>
+<li>可扩展哈希表实现page_id-&gt;frame_id映射关系</li>
+<li>LRU-K作为页面驱逐策略</li>
+<li>缓冲池实现页面操作处理</li>
+</ul>
+<h2 id="可扩展哈希表"><a href="#可扩展哈希表" class="headerlink" title="可扩展哈希表"></a>可扩展哈希表</h2><!-- ![avatar](/images/) -->
+<p>可扩展哈希表是一个哈希表（链式解决冲突）的一个变种，在链式解决冲突的方法中，当<code>key</code>多次发生冲突后，会造成所链表长度过大，查询变慢的问题，可扩展哈希表则会限制“链表”的大小。  </p>
+<p>具体来讲，可扩展哈希表分为两个部分，第一部分为哈希目录<code>dir</code>，第二部分为目录所指向的桶<code>bucket</code>。</p>
+<p>TO BE CONTINUE …</p>
+]]></content>
+      <tags>
+        <tag>CMU15445</tag>
+        <tag>数据库</tag>
       </tags>
   </entry>
 </search>
